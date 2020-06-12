@@ -2,6 +2,51 @@
 import {Lightning, Utils, MediaPlayer} from "wpe-lightning-sdk";
 import {PlayPause, Back, Forward} from '../components'
 
+
+/*
+
+The way I have done it it's different the way I guess you want:
+
+I have created the buttons (with text, don't worry I see the images after I did it...).
+The buttons will launch several signals depending what you press and this component
+will handle the button you pressed.
+
+How? The buttons calls the methos of the MediaPlayer
+
+After that I listed to the events of it in order to do several things like update
+the progress bar (yes, it's not done right) by setting a property called this._playtime that
+handles the second you are.
+
+I calculate the size and where is on the bar by a method called _redrawProgressBar by
+an small calculus. This method is called everytime you play/stop/go back/go forward and...
+on the timer for the progress bar (see next).
+
+Because we need to update the progress bar when playing and there's no event that (for example)
+every second or so throws and have the time the video is I did a setInterval who is
+the responsible that every second update the this._playtime.
+
+The problem with this way it's that I must be really aware of stoping or setting the timer
+in order not to keeo playing after something or while updating the this._playtime inside the
+method don't kill the real timer (something that happens).
+
+So, several questions:
+
+- Is there any event on the mediaplayer that shouts at what time is while playing? if not,
+it will be a great idea
+- Is there a better way to upgrade the progress bar that what I do?
+
+As you can see I didn't use your way of the states of doing the job (I guess it's why you put
+the states there... but I don't think it's necesary). How did you resolve this with the states?
+It will be redundant to play/pause/etc... by states if I can do it directly inside the
+class? I will wait for your resolution to see how you think to solve this (that it's different from
+my way, of couse).
+
+Ahh! I know that the setTimeout way is broken in some possibility, be kind xD
+AHh (2) I changed the video from the one you give to another different. Don't worry if you see a different
+video on the player.
+
+*/
+
 export default class Player extends Lightning.Component {
     static _template() {
         return {
@@ -241,7 +286,7 @@ export default class Player extends Lightning.Component {
         this._video.play();
         this._redrawProgressBar()
 
-        this._setState('Paused')
+        this._setState('Paused');
     }
 
     $mediaplayerError() {
@@ -262,7 +307,7 @@ export default class Player extends Lightning.Component {
         // when pause, redraw the bar
         this._redrawProgressBar();
         // set the timer
-        this._startTimer();
+        // this._startTimer();
     }
 
     $mediaplayerPlaying(data) {
@@ -272,10 +317,10 @@ export default class Player extends Lightning.Component {
         this._redrawProgressBar()
 
         // who knows
-        if (this._barTimer) {
-            this._startTimer();
-        }
-        this._startTimer();
+        // if (this._barTimer) {
+        //     this._stopTimer();
+        // }
+        // this._startTimer();
     }
 
     $mediaplayerSeeking(data) {
@@ -284,6 +329,11 @@ export default class Player extends Lightning.Component {
     }
 
     $mediaplayerTimeupdate(data) {
+    }
+
+    $mediaplayerProgress({currentTime, duration}) {
+        this._playtime = Math.floor(currentTime)
+        this._redrawProgressBar();
     }
 
     _redrawProgressBar() {
