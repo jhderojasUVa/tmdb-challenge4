@@ -23,13 +23,13 @@ export default class Player extends Lightning.Component {
                 h: h => h || 1080,
                 type: MediaPlayer
             },
-            PlayPause: {
-                x: 0,
-                y: 0,
+            PlayPauseBackground: {
+                x: w => w / 2 || 1920 / 2,
+                y: h => h / 2 || 1080 / 2,
             },
             FileInformation: {
-                x: 10,
-                y: 10,
+                x: 40,
+                y: 950,
                 w: 550,
                 h: 80,
                 Text: {
@@ -39,7 +39,7 @@ export default class Player extends Lightning.Component {
                     text: {
                         fontColor: 0xFFffffff,
                         fontSize: 20,
-                        text: 'fffff'
+                        text: 'duration: '
                     }
                 }
             },
@@ -77,10 +77,10 @@ export default class Player extends Lightning.Component {
                     color: 0xFFffffff
                 },
                 TimeConsumed: {
-                    y: 150,
+                    y: 145,
                     x: 0,
-                    h: 5,
-                    w: 0,
+                    h: 10,
+                    w: 1,
                     rect: true,
                     color: 0xFFffffff
                 }
@@ -204,7 +204,9 @@ export default class Player extends Lightning.Component {
 
     // Player controls
     playerPlay() {
-        this._video.playPause()
+        this._video.playPause();
+        // Redraw the line
+
     }
 
     playerBack() {
@@ -217,14 +219,29 @@ export default class Player extends Lightning.Component {
         this._video.seek(5)
     }
 
+    _startTimer() {
+        // Update every 500 miliseconds
+        this._barTimer = setInterval(() => {
+            this._playtime = this._playtime + 1;
+            this._redrawProgressBar();
+        }, 1000);
+    }
+
+    _stopTimer() {
+        clearInterval(this._barTimer);
+    }
+
     /**
      * This will be automatically called when the mediaplayer pause event is triggerd
      * @todo:
      * - Add this Component in a Paused state
      */
-    $mediaplayerPause() {
+    $mediaplayerPause(event) {
+        console.log('Pause', event)
         this._video.play();
         this._redrawProgressBar()
+
+        this._setState('Paused')
     }
 
     $mediaplayerError() {
@@ -232,6 +249,7 @@ export default class Player extends Lightning.Component {
     }
 
     $mediaplayerLoadedData(data) {
+        // Set the time duration and the text
         this._durationText.text.text = 'duration: ' + Math.floor(data.event.timeStamp / 10) + ' seconds';
         this._durationTime = Math.floor(data.event.timeStamp);
     }
@@ -241,22 +259,31 @@ export default class Player extends Lightning.Component {
         this._playtime = Math.floor(data.event.timeStamp / 1000)
         // change the PLAY button label
         this._videoControlsPlay.setLabel = 'PAUSE';
-        this._redrawProgressBar()
+        // when pause, redraw the bar
+        this._redrawProgressBar();
+        // set the timer
+        this._startTimer();
     }
 
     $mediaplayerPlaying(data) {
         console.log('Playing', data)
         this._videoControlsPlay.setLabel = 'PLAY';
+        // When play, redraw de bar
         this._redrawProgressBar()
+
+        // who knows
+        if (this._barTimer) {
+            this._startTimer();
+        }
+        this._startTimer();
     }
 
     $mediaplayerSeeking(data) {
-        // console.log('Seeking', data)
+        // When going back or forward, redraw the bar
         this._redrawProgressBar()
     }
 
     $mediaplayerTimeupdate(data) {
-        // console.log('timeupdate', data)
     }
 
     _redrawProgressBar() {
@@ -264,14 +291,10 @@ export default class Player extends Lightning.Component {
         // we have where I am
         // print it ;)
 
-        // console.log(
-        //     Math.floor(this._durationTime / this._playtime * 100)
-        // )
+        // Remember that total size is 1000 of the bar
+        let percentagePlayed = this._playtime !== 0 ? Math.floor((this._playtime * 100) / this._durationTime ) : 1;
 
-        console.log('duration total', this._durationTime)
-        console.log('playtime', this._playtime)
-
-        let where = this._playtime != 0 ? Math.floor(this._durationTime / this._playtime * 100) : 0
+        let where = Math.floor((this.tag('DurationLine').w * percentagePlayed) / 100)
 
         this.tag('TimeConsumed').patch({
             w: where,
@@ -289,7 +312,11 @@ export default class Player extends Lightning.Component {
              */
             class Paused extends this{
                 $enter(){
-                    this.tag("PlayPause").src = Utils.asset("mediaplayer/play.png");
+                    this.tag("PlayPauseBackground").alpha = 1;
+                    this.tag("PlayPauseBackground").src = Utils.asset("mediaplayer/play.png");
+                }
+                $exit() {
+                    this.tag("PlayPauseBackground").alpha = 0;
                 }
                 _handleEnter(){
                     this._video.doPlay();
