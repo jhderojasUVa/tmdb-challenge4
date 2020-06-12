@@ -119,6 +119,12 @@ export default class Details {
         return this._video;
     }
 
+    get stream(){
+        // return "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4";
+        // This is bigger (more than 10 seconds)
+        return "https://file-examples.com/wp-content/uploads/2017/04/file_example_MP4_1920_18MG.mp4";
+    }
+
     get voteAverage() {
         return this._vote_average;
     }
